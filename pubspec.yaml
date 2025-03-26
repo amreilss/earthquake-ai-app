@@ -20,5 +20,21 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  fonts:
+    - family: InriaSerif
+      fonts:
+        - asset: assets/fonts/InriaSerif-Regular.ttf
+        - asset: assets/fonts/InriaSerif-Bold.ttf
+          weight: 700
+
   assets:
-    - asset/images/
+    - assets/images/logo.png
+    - assets/images/komhua.png
+    - assets/images/drop.png
+    - assets/images/holdon.png
+    - assets/images/dont_panic.png
+    - assets/images/pidgas.png
+    - assets/images/nolift.png
+    - assets/images/potectyourhead.png
+    - assets/images/run.png
+    - assets/images/take_cover.png

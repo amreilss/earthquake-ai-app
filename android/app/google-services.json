@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "551670287020",
+    "project_id": "earthquake-ai-app",
+    "storage_bucket": "earthquake-ai-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:551670287020:android:bdae96cac93e07a2ec2d09",
+        "android_client_info": {
+          "package_name": "com.example.test_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "551670287020-tmngt2qg0trj3qct15anu32hn8kgqldp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2n-gxE9gGyN4_0PjxmCZxubXSuuJpzrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "551670287020-tmngt2qg0trj3qct15anu32hn8kgqldp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

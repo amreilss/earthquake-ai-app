@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'routes.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'pages/login_page.dart'; // ✅ import หน้าแรก
+import 'routes.dart'; // ✅ routes ควรแยกไว้ที่ routes.dart
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // ✅ Firebase init
   runApp(const EarthquakeAIApp());
 }
 

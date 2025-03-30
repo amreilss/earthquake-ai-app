@@ -10,7 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  flutter_svg: ^2.0.7  # ✅ เพิ่มอันนี้
+  flutter_svg: ^2.0.7
+  firebase_core: ^2.25.4           # ✅ ใช้เชื่อม Firebase
+  firebase_auth: ^4.17.4           # ✅ ใช้สำหรับ Google Auth
+  google_sign_in: ^6.2.1           # ✅ Google Sign-In
 
 dev_dependencies:
   flutter_test:
@@ -39,3 +42,4 @@ flutter:
     - assets/images/run.png
     - assets/images/take_cover.png
     - assets/images/policy.png
+    - assets/images/google.png

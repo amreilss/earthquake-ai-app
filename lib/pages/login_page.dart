@@ -1,7 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
+
+  Future<void> _showPolicyBeforeSignIn(BuildContext context) async {
+    bool accepted = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: const Color(0xFFFDF5E6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFCDD9D),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: const SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Private Policy',
+                          style: TextStyle(
+                            fontFamily: 'InriaSerif',
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'This app respects your privacy.\n\n'
+                              'We collect anonymous usage data to improve your experience. '
+                              'No personal information is shared with third parties.\n\n'
+                              'By using this app, you agree to the terms stated in this policy.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontFamily: 'InriaSerif',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  accepted = true;
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF1642E),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                ),
+                child: const Text(
+                  'Accept',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'InriaSerif',
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (accepted) {
+      await _signInWithGoogle(context);
+    }
+  }
+
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return;
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      Navigator.pushReplacementNamed(context, '/alert');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9,148 +112,40 @@ class LoginPage extends StatelessWidget {
       backgroundColor: const Color(0xFFFFF8E1),
       body: Stack(
         children: [
-          // ---------- Main content ----------
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          /// ✅ Centered Logo and Google Sign-In button
+          Center(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 220,
-                ),
-                const SizedBox(height: 32),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/alert');
-                  },
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
-                      shadows: [
-                        Shadow(
-                          blurRadius: 6,
-                          offset: Offset(2, 2),
-                          color: Colors.black38,
-                        )
-                      ],
-                    ),
+                Image.asset('assets/images/logo.png', width: 200),
+                const SizedBox(height: 40),
+                ElevatedButton.icon(
+                  icon: Image.asset('assets/images/google.png', width: 24),
+                  label: const Text('Sign in with Google'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    elevation: 5,
                   ),
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF2C2C2C),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Username',
-                    hintStyle: const TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFF2C2C2C),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFE0E0E0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  obscureText: true,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF2C2C2C),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    hintStyle: const TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFF2C2C2C),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFE0E0E0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF2C2C2C),
-                      textStyle: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('Forgot Password'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
-                      shadows: [
-                        Shadow(
-                          blurRadius: 4,
-                          offset: Offset(2, 2),
-                          color: Colors.black26,
-                        )
-                      ],
-                    ),
-                  ),
+                  onPressed: () => _showPolicyBeforeSignIn(context),
                 ),
               ],
             ),
           ),
 
-          // ---------- Top-right icon (policy.png) ----------
+          /// ✅ Top-right Policy Icon (ทำงานแบบเดียวกัน)
           Positioned(
             top: 40,
             right: 20,
             child: GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Privacy Policy'),
-                    content: const Text(
-                      'This app collects location data to provide accurate earthquake alerts, '
-                          'even when the app is closed or not in use. Your personal data will not be '
-                          'shared with any third parties. By continuing, you agree to our privacy policy.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onTap: () => _showPolicyBeforeSignIn(context),
               child: Image.asset(
                 'assets/images/policy.png',
-                width: 70,
-                height: 70,
+                width: 50,
+                height: 50,
               ),
             ),
           ),

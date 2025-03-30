@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -35,7 +32,7 @@ class LoginPage extends StatelessWidget {
                     child: Column(
                       children: [
                         Text(
-                          'Private Policy',
+                          'Privacy Policy',
                           style: TextStyle(
                             fontFamily: 'InriaSerif',
                             fontSize: 18,
@@ -69,7 +66,8 @@ class LoginPage extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 ),
                 child: const Text(
                   'Accept',
@@ -97,32 +95,32 @@ class LoginPage extends StatelessWidget {
       if (googleUser == null) return;
 
       final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
-        idToken: idToken,
+        idToken: googleAuth.idToken,
       );
+
+      // 🔐 Sign in with Firebase
+      final userCredential =
       await FirebaseAuth.instance.signInWithCredential(credential);
 
-      final response = await http.post(
-        Uri.parse("http://<YOUR_BACKEND_URL>/login"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('apiToken', data['apiToken']);
-        await prefs.setString('userName', data['name']);
-        await prefs.setString('email', data['email']);
-
-        Navigator.pushReplacementNamed(context, '/alert');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('API Login failed: ${response.body}')),
+      final idToken = await userCredential.user?.getIdToken();
+      if (idToken != null) {
+        // 🌐 ส่ง token ไป backend API
+        final response = await http.post(
+          Uri.parse('https://api.earthquakeai.site/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'idToken': idToken}),
         );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          print('🟢 Login Success: ${data['email']}');
+          // TODO: เก็บ apiToken หรือข้อมูลผู้ใช้ไว้ใช้ต่อ
+          Navigator.pushReplacementNamed(context, '/alert');
+        } else {
+          throw Exception("Backend Login Failed");
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -137,152 +135,44 @@ class LoginPage extends StatelessWidget {
       backgroundColor: const Color(0xFFFFF8E1),
       body: Stack(
         children: [
-          // ---------- Main content ----------
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 220,
-                ),
-                const SizedBox(height: 32),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/alert');
-                  },
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
-                      shadows: [
-                        Shadow(
-                          blurRadius: 6,
-                          offset: Offset(2, 2),
-                          color: Colors.black38,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF2C2C2C),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Username',
-                    hintStyle: const TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFF2C2C2C),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFE0E0E0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  obscureText: true,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF2C2C2C),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    hintStyle: const TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFF2C2C2C),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFE0E0E0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF2C2C2C),
-                      textStyle: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('Forgot Password'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
-                      shadows: [
-                        Shadow(
-                          blurRadius: 4,
-                          offset: Offset(2, 2),
-                          color: Colors.black26,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-
-
-          // ---------- Top-right icon (policy.png) ----------
-
+          // ✅ Top-right Policy Icon
           Positioned(
             top: 40,
             right: 20,
             child: GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Privacy Policy'),
-                    content: const Text(
-                      'This app collects location data to provide accurate earthquake alerts, '
-                          'even when the app is closed or not in use. Your personal data will not be '
-                          'shared with any third parties. By continuing, you agree to our privacy policy.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onTap: () => _showPolicyBeforeSignIn(context),
               child: Image.asset(
                 'assets/images/policy.png',
-                width: 70,
-                height: 70,
+                width: 50,
+                height: 50,
               ),
+            ),
+          ),
+
+          // ✅ Center Logo and Google Button
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/images/logo.png', width: 200),
+                const SizedBox(height: 40),
+                ElevatedButton.icon(
+                  icon: Image.asset('assets/images/google.png', width: 24),
+                  label: const Text('Sign in with Google'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
+                    elevation: 5,
+                  ),
+                  onPressed: () => _showPolicyBeforeSignIn(context),
+                ),
+              ],
             ),
           ),
         ],

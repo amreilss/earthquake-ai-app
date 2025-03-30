@@ -9,12 +9,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_map: ^6.2.1     # หรือเวอร์ชันล่าสุด
+  latlong2: ^0.9.0
+  geolocator: ^10.1.0
+  geocoding: ^3.0.0
+  http: ^1.3.0             # ✅ แก้ตรงนี้เป็นเวอร์ชัน 1 ขึ้นไป
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.7
+HEAD
   firebase_core: ^2.25.4           # ✅ ใช้เชื่อม Firebase
   firebase_auth: ^4.17.4           # ✅ ใช้สำหรับ Google Auth
   google_sign_in: ^6.2.1           # ✅ Google Sign-In
   shared_preferences: ^2.2.2
+
+ 7431a87ceb7d6f554d0b54ffebb704fcd453c4c9
 
 dev_dependencies:
   flutter_test:
@@ -43,4 +51,3 @@ flutter:
     - assets/images/run.png
     - assets/images/take_cover.png
     - assets/images/policy.png
-    - assets/images/google.png

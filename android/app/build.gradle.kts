@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.test_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973" // ✅ ตั้งให้ตรงกับที่ geolocator และ geocoding ต้องการ
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

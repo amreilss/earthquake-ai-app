@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -92,13 +95,33 @@ class LoginPage extends StatelessWidget {
       if (googleUser == null) return;
 
       final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        idToken: idToken,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final response = await http.post(
+        Uri.parse("http://<YOUR_BACKEND_URL>/login"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      Navigator.pushReplacementNamed(context, '/alert');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('apiToken', data['apiToken']);
+        await prefs.setString('userName', data['name']);
+        await prefs.setString('email', data['email']);
+
+        Navigator.pushReplacementNamed(context, '/alert');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('API Login failed: ${response.body}')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login failed: $e')),
@@ -112,7 +135,6 @@ class LoginPage extends StatelessWidget {
       backgroundColor: const Color(0xFFFFF8E1),
       body: Stack(
         children: [
-          /// ✅ Centered Logo and Google Sign-In button
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -135,8 +157,6 @@ class LoginPage extends StatelessWidget {
               ],
             ),
           ),
-
-          /// ✅ Top-right Policy Icon (ทำงานแบบเดียวกัน)
           Positioned(
             top: 40,
             right: 20,

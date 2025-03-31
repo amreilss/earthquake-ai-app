@@ -66,8 +66,7 @@ class LoginPage extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 ),
                 child: const Text(
                   'Accept',
@@ -91,38 +90,47 @@ class LoginPage extends StatelessWidget {
 
   Future<void> _signInWithGoogle(BuildContext context) async {
     try {
+      print('🔁 เรียก _signInWithGoogle แล้ว');
+
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
+      if (googleUser == null) {
+        print('❌ ผู้ใช้ยกเลิกการล็อกอิน');
+        return;
+      }
+
+      print('✅ ลงชื่อเข้าใช้ Google สำเร็จ: ${googleUser.email}');
 
       final googleAuth = await googleUser.authentication;
+
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // 🔐 Sign in with Firebase
-      final userCredential =
       await FirebaseAuth.instance.signInWithCredential(credential);
+      print('✅ ลงชื่อเข้าใช้ Firebase สำเร็จ');
 
-      final idToken = await userCredential.user?.getIdToken();
-      if (idToken != null) {
-        // 🌐 ส่ง token ไป backend API
-        final response = await http.post(
-          Uri.parse('https://api.earthquakeai.site/login'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'idToken': idToken}),
-        );
+      final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      print('✅ Firebase idToken: $idToken');
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          print('🟢 Login Success: ${data['email']}');
-          // TODO: เก็บ apiToken หรือข้อมูลผู้ใช้ไว้ใช้ต่อ
-          Navigator.pushReplacementNamed(context, '/alert');
-        } else {
-          throw Exception("Backend Login Failed");
-        }
+      // ส่ง token ไป backend
+      final response = await http.post(
+        Uri.parse('https://api.earthquakeai.site/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'idToken': idToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final userData = json.decode(response.body);
+        print("🎉 Login success! Response from API: $userData");
+
+        Navigator.pushReplacementNamed(context, '/alert');
+      } else {
+        throw Exception("Login failed with backend: ${response.body}");
       }
+
     } catch (e) {
+      print('🔥 เกิดข้อผิดพลาด: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login failed: $e')),
       );
@@ -135,21 +143,6 @@ class LoginPage extends StatelessWidget {
       backgroundColor: const Color(0xFFFFF8E1),
       body: Stack(
         children: [
-          // ✅ Top-right Policy Icon
-          Positioned(
-            top: 40,
-            right: 20,
-            child: GestureDetector(
-              onTap: () => _showPolicyBeforeSignIn(context),
-              child: Image.asset(
-                'assets/images/policy.png',
-                width: 50,
-                height: 50,
-              ),
-            ),
-          ),
-
-          // ✅ Center Logo and Google Button
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -162,17 +155,26 @@ class LoginPage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
-                    textStyle: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     elevation: 5,
                   ),
                   onPressed: () => _showPolicyBeforeSignIn(context),
                 ),
               ],
+            ),
+          ),
+          Positioned(
+            top: 40,
+            right: 20,
+            child: GestureDetector(
+              onTap: () => _showPolicyBeforeSignIn(context),
+              child: Image.asset(
+                'assets/images/policy.png',
+                width: 50,
+                height: 50,
+              ),
             ),
           ),
         ],

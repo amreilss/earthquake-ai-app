@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -84,56 +80,8 @@ class LoginPage extends StatelessWidget {
     );
 
     if (accepted) {
-      await _signInWithGoogle(context);
-    }
-  }
-
-  Future<void> _signInWithGoogle(BuildContext context) async {
-    try {
-      print('🔁 เรียก _signInWithGoogle แล้ว');
-
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        print('❌ ผู้ใช้ยกเลิกการล็อกอิน');
-        return;
-      }
-
-      print('✅ ลงชื่อเข้าใช้ Google สำเร็จ: ${googleUser.email}');
-
-      final googleAuth = await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      print('✅ ลงชื่อเข้าใช้ Firebase สำเร็จ');
-
-      final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
-      print('✅ Firebase idToken: $idToken');
-
-      // ส่ง token ไป backend
-      final response = await http.post(
-        Uri.parse('https://api.earthquakeai.site/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'idToken': idToken}),
-      );
-
-      if (response.statusCode == 200) {
-        final userData = json.decode(response.body);
-        print("🎉 Login success! Response from API: $userData");
-
-        Navigator.pushReplacementNamed(context, '/alert');
-      } else {
-        throw Exception("Login failed with backend: ${response.body}");
-      }
-
-    } catch (e) {
-      print('🔥 เกิดข้อผิดพลาด: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
+      // 👇 ล็อกอินปลอม → ไปหน้า alert เลย
+      Navigator.pushReplacementNamed(context, '/alert');
     }
   }
 

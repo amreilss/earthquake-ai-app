@@ -220,13 +220,6 @@ class SettingPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: CustomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) Navigator.pushReplacementNamed(context, '/safety');
-          if (index == 1) Navigator.pushReplacementNamed(context, '/alert');
-        },
-      ),
     );
   }
 }

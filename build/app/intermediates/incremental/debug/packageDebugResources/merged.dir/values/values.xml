@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">926329650270</string>
+    <string name="google_api_key" translatable="false">AIzaSyDKtR7vIytWaQ-rnr5J9SViOKvb90ZJwns</string>
+    <string name="google_app_id" translatable="false">1:926329650270:android:d93b5f38e7528664a488cf</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDKtR7vIytWaQ-rnr5J9SViOKvb90ZJwns</string>
+    <string name="google_storage_bucket" translatable="false">earthquake-ai-acc08.firebasestorage.app</string>
+    <string name="project_id" translatable="false">earthquake-ai-acc08</string>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

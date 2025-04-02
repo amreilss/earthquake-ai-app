@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "926329650270",
+    "project_id": "earthquake-ai-acc08",
+    "storage_bucket": "earthquake-ai-acc08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:926329650270:android:d93b5f38e7528664a488cf",
+        "android_client_info": {
+          "package_name": "com.example.test_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKtR7vIytWaQ-rnr5J9SViOKvb90ZJwns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

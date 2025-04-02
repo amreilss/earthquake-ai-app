@@ -136,13 +136,6 @@ class SafetyPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: CustomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 1) Navigator.pushReplacementNamed(context, '/alert');
-          if (index == 2) Navigator.pushReplacementNamed(context, '/setting');
-        },
-      ),
     );
   }
 }

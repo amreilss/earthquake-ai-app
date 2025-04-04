@@ -1,4 +1,6 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+/// ✅ home_alert_page.dart (แก้ให้รองรับ JSON โครงสร้างใหม่)
+/// รองรับ field: magnitude, depth, reaction, intensity, destructionNumber, location.lat/lng
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -6,12 +8,15 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class AlertNotification {
   final String date;
   final String area;
   final String magnitude;
-  final String dept;
+  final String depth;
   final String reaction;
   final String destruction;
   final String intensity;
@@ -22,7 +27,7 @@ class AlertNotification {
     required this.date,
     required this.area,
     required this.magnitude,
-    required this.dept,
+    required this.depth,
     required this.reaction,
     required this.destruction,
     required this.intensity,
@@ -32,8 +37,8 @@ class AlertNotification {
 
   factory AlertNotification.fromJson(Map<String, dynamic> json) {
     final location = json['location'] ?? {};
-    final lat = location['_latitude'] ?? location['lat'] ?? 0.0;
-    final lng = location['_longitude'] ?? location['lng'] ?? 0.0;
+    final lat = location['lat'] ?? location['_latitude'] ?? 0.0;
+    final lng = location['lng'] ?? location['_longitude'] ?? 0.0;
 
     DateTime date;
     if (json.containsKey('createDate') &&
@@ -42,23 +47,36 @@ class AlertNotification {
       final timestamp = json['createDate']['_seconds'];
       date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
     } else {
-      date = DateTime.now(); // ถ้าไม่มี timestamp มา
+      date = DateTime.now();
     }
 
-    final magnitude = json['magnitude'].toString();
+    final magnitude = json['magnitude']?.toString() ?? "null";
+    final depth = json['depth']?.toString() ?? "null";
 
     return AlertNotification(
       date: date.toString(),
       area: '',
       magnitude: magnitude,
-      dept: json['depth'].toString(),
+      depth: depth,
       reaction: json['reaction'] ?? '',
-      destruction: getDestructionFromMagnitude(magnitude),
-      intensity: getIntensityFromMagnitude(magnitude),
+      destruction: json['destructionNumber']?.toString() ?? getDestructionFromMagnitude(magnitude),
+      intensity: json['intensity']?.toString() ?? getIntensityFromMagnitude(magnitude),
       lat: double.tryParse(lat.toString()) ?? 0.0,
       lng: double.tryParse(lng.toString()) ?? 0.0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    "date": date,
+    "area": area,
+    "magnitude": magnitude,
+    "depth": depth,
+    "reaction": reaction,
+    "destruction": destruction,
+    "intensity": intensity,
+    "lat": lat,
+    "lng": lng,
+  };
 }
 
 String getDestructionFromMagnitude(String magStr) {
@@ -79,6 +97,8 @@ String getIntensityFromMagnitude(String magStr) {
   return "Violent ผลกระทบรุนแรง!";
 }
 
+
+
 class HomeAlertPage extends StatefulWidget {
   const HomeAlertPage({Key? key}) : super(key: key);
 
@@ -96,21 +116,47 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  void _initFirebaseMessaging() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null && android != null) {
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'high_importance_channel',
+              'High Importance Notifications',
+              channelDescription: 'Used for important notifications',
+              importance: Importance.max,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   void initState() {
+
     super.initState();
     _getCurrentLocation();
+    _loadLocalHistory(); // ✅ เพิ่มบรรทัดนี้
+    _initFirebaseMessaging(); // ✅ ใช้รับ fcm ตอนเปิดแอป
 
     channel = WebSocketChannel.connect(
       Uri.parse('ws://api.earthquakeai.site/ws/'),
     );
 
     channel.stream.listen((message) async {
-      print('📡 ได้ข้อมูลจาก WebSocket: $message');
       try {
         final data = jsonDecode(message);
         final alert = AlertNotification.fromJson(data);
-        print('📥 แปลง JSON แล้ว: ${alert.magnitude}, ${alert.lat}, ${alert.lng}');
 
         String areaName = 'Unknown';
         try {
@@ -118,15 +164,13 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
           if (placemark.isNotEmpty) {
             areaName = '${placemark[0].subLocality}, ${placemark[0].locality}, ${placemark[0].country}';
           }
-        } catch (e) {
-          print('⚠️ placemark error: $e');
-        }
+        } catch (_) {}
 
         final enrichedAlert = AlertNotification(
           date: alert.date,
           area: areaName,
           magnitude: alert.magnitude,
-          dept: alert.dept,
+          depth: alert.depth,
           reaction: alert.reaction,
           destruction: alert.destruction,
           intensity: alert.intensity,
@@ -136,11 +180,11 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
 
         setState(() {
           alertHistory.insert(0, enrichedAlert);
-          print('📍 Added to history: ${enrichedAlert.magnitude}');
         });
+        _saveAlertHistory(); // ✅ เพิ่มบรรทัดนี้
 
         if (currentPosition != null && isWithinAlertRadius(enrichedAlert, currentPosition!)) {
-          // 🔔 Popup
+          // Popup
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
@@ -157,12 +201,12 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
             ),
           );
 
-          // 🔔 Local Notification
+          // Local Notification
           flutterLocalNotificationsPlugin.show(
             enrichedAlert.hashCode,
             '🌍 Earthquake Alert',
             'Magnitude ${enrichedAlert.magnitude} at ${enrichedAlert.area}',
-            NotificationDetails(
+            const NotificationDetails(
               android: AndroidNotificationDetails(
                 'high_importance_channel',
                 'High Importance Notifications',
@@ -173,15 +217,10 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
               ),
             ),
           );
-        } else {
-          print('📍 แผ่นดินไหวอยู่นอกระยะที่ควรแจ้งเตือน');
         }
-      } catch (e) {
-        print('❗ JSON ผิดพลาด: $e');
-      }
+      } catch (_) {}
     });
   }
-
 
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -204,8 +243,7 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
     });
     _mapController.move(position, 15.0);
 
-    List<Placemark> placemarks =
-    await placemarkFromCoordinates(position.latitude, position.longitude);
+    List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
     if (placemarks.isNotEmpty) {
       Placemark place = placemarks[0];
       setState(() {
@@ -214,6 +252,36 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
       });
     }
   }
+
+  Future<void> _loadLocalHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('alertHistory') ?? [];
+
+    setState(() {
+      alertHistory = saved.map((e) {
+        final Map<String, dynamic> json = jsonDecode(e);
+        return AlertNotification.fromJson(json);
+      }).toList();
+    });
+  }
+
+  Future<void> _saveAlertHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = alertHistory.map((e) => jsonEncode({
+      "date": e.date,
+      "area": e.area,
+      "magnitude": e.magnitude,
+      "depth": e.depth,
+      "reaction": e.reaction,
+      "destruction": e.destruction,
+      "intensity": e.intensity,
+      "lat": e.lat,
+      "lng": e.lng,
+    })).toList();
+    await prefs.setStringList('alertHistory', saved);
+  }
+
+
 
   double getAlertRadius(String magnitudeStr) {
     final mag = double.tryParse(magnitudeStr) ?? 0.0;
@@ -232,17 +300,30 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
       userPos,
     );
     final double allowedRadius = getAlertRadius(alert.magnitude);
-    print('🔍 ห่างจาก epicenter: ${dist.toStringAsFixed(2)} m, ขีดจำกัด: $allowedRadius m');
     return dist <= allowedRadius;
   }
 
   Widget _buildNotificationList() {
     if (alertHistory.isEmpty) {
-      return const Text("ไม่มีข้อมูลแจ้งเตือน");
+      return const Center(
+        child: Text(
+          "ไม่มีข้อมูลแจ้งเตือน",
+          style: TextStyle(
+            fontFamily: 'InriaSerif',
+            fontSize: 16,
+            color: Colors.grey,
+          ),
+        ),
+      );
     }
 
     return Column(
       children: alertHistory.map((data) {
+        // ข้ามการแสดงถ้าข้อมูลไม่สมบูรณ์
+        if (data.magnitude == "null" || data.depth == "null") {
+          return const SizedBox.shrink();
+        }
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -256,7 +337,7 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
               Text('Date : ${data.date}'),
               Text('Area : ${data.area}'),
               Text('Magnitude : ${data.magnitude}'),
-              Text('Dept : ${data.dept}'),
+              Text('Depth : ${data.depth}'),
               Text('Reaction : ${data.reaction}'),
               Text('Destruction : ${data.destruction}'),
               Text('Intensity : ${data.intensity}'),

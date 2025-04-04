@@ -2,7 +2,7 @@ class AlertNotification {
   final String date;
   final String area;
   final String magnitude;
-  final String dept;
+  final String depth;
   final String reaction;
   final String destruction;
   final String intensity;
@@ -13,7 +13,7 @@ class AlertNotification {
     required this.date,
     required this.area,
     required this.magnitude,
-    required this.dept,
+    required this.depth,
     required this.reaction,
     required this.destruction,
     required this.intensity,
@@ -21,24 +21,26 @@ class AlertNotification {
     required this.lng,
   });
 
-  // ✅ ฟังก์ชันสร้าง object จาก JSON (ใช้ใน WebSocket)
+  // ✅ แก้ให้รองรับ JSON รูปแบบใหม่
   factory AlertNotification.fromJson(Map<String, dynamic> json) {
     final magnitude = json['magnitude'].toString();
+    final depth = json['depth'].toString();
+
     return AlertNotification(
       date: DateTime.now().toString(),
-      area: 'Unknown area', // หรือใส่ location จาก json ถ้ามี
+      area: 'Unknown area', // คุณอาจใช้ reverse geocoding ได้ภายหลัง
       magnitude: magnitude,
-      dept: json['dept'] ?? '',
+      depth: depth,
       reaction: json['reaction'] ?? '',
-      destruction: getDestructionFromMagnitude(magnitude),
-      intensity: getIntensityFromMagnitude(magnitude),
-      lat: double.tryParse(json['lat'].toString()) ?? 0.0,
-      lng: double.tryParse(json['lng'].toString()) ?? 0.0,
+      destruction: json['destructionNumber']?.toString() ?? getDestructionFromMagnitude(magnitude),
+      intensity: json['intensity']?.toString() ?? getIntensityFromMagnitude(magnitude),
+      lat: double.tryParse(json['location']?['lat'].toString() ?? '') ?? 0.0,
+      lng: double.tryParse(json['location']?['lng'].toString() ?? '') ?? 0.0,
     );
   }
 }
 
-// ✅ ฟังก์ชันคำนวณผลกระทบจาก magnitude
+// ✅ ฟังก์ชันสำรองหากไม่มี intensity หรือ destruction จาก JSON
 String getDestructionFromMagnitude(String magStr) {
   final mag = double.tryParse(magStr) ?? 0.0;
   if (mag < 4.0) return "No damage";

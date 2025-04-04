@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
+    id("dev.flutter.flutter-gradle-plugin") // Flutter Plugin ต้องอยู่หลัง Android/Kotlin
     id("com.google.gms.google-services")
 }
 
@@ -21,8 +21,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.test_app" // 👈 เปลี่ยนได้ถ้าต้องการ unique
-        minSdk = flutter.minSdkVersion
+        applicationId = "com.example.test_app" // 👈 ถ้าอัปโหลด Play Store ควรเปลี่ยนเป็น id จริง
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -30,7 +30,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("../earthquake-key.jks") // ✅ ต้องเป็น ../ เพราะไฟล์อยู่นอกโฟลเดอร์ app
+            storeFile = file("../earthquake-key.jks") // ✅ อยู่ในโฟลเดอร์ root
             storePassword = "123456"
             keyAlias = "earthquake"
             keyPassword = "123456"
@@ -39,7 +39,7 @@ android {
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release") // ✅ ใช้ key ที่สร้างเอง
+            signingConfig = signingConfigs.getByName("release") // ✅ ใช้ release key จริง
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
@@ -48,7 +48,7 @@ android {
             )
         }
         getByName("debug") {
-            // debug config เดิม
+            // ใช้ debug key เริ่มต้น
         }
     }
 }
@@ -60,5 +60,3 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
-
-apply(plugin = "com.google.gms.google-services")

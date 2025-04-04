@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // ✅ ใช้ environment variable
 
 // 🔐 Init Firebase Admin
 const serviceAccount = require('./serviceAccountKey.json');
@@ -16,7 +16,7 @@ admin.initializeApp({
 app.use(cors());
 app.use(bodyParser.json());
 
-// 🌐 WebSocket Server
+// 🌐 WebSocket Server (ยังใช้พอร์ต 8080 ได้ปกติ)
 const wss = new WebSocket.Server({ port: 8080 });
 const clients = new Set();
 
@@ -45,7 +45,7 @@ app.post('/send-alert', async (req, res) => {
       _longitude: data.location.lng,
     },
     createDate: {
-      _seconds: Math.floor(Date.now() / 1000), // current timestamp in seconds
+      _seconds: Math.floor(Date.now() / 1000),
     },
   };
 
@@ -85,5 +85,5 @@ app.post('/send-alert', async (req, res) => {
 
 // ▶️ Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

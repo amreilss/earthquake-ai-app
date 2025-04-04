@@ -4,6 +4,23 @@
             "outputFile": "com.example.test_app-mergeDebugResources-31:/values-fa/values-fa.xml",
             "map": [
                 {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.10.2\\transforms\\f8742dbdd8ad548bbf5dde49a0ea9a7d\\transformed\\browser-1.4.0\\res\\values-fa\\values-fa.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,154,251,362",
+                        "endColumns": "98,96,110,102",
+                        "endOffsets": "149,246,357,460"
+                    },
+                    "to": {
+                        "startLines": "27,28,29,30",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "3005,3104,3201,3312",
+                        "endColumns": "98,96,110,102",
+                        "endOffsets": "3099,3196,3307,3410"
+                    }
+                },
+                {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.10.2\\transforms\\8cf478dec41eed746328fa8046755ba2\\transformed\\core-1.13.1\\res\\values-fa\\values-fa.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
@@ -13,11 +30,11 @@
                         "endOffsets": "149,251,350,450,551,657,774,875"
                     },
                     "to": {
-                        "startLines": "2,3,4,5,6,7,8,27",
+                        "startLines": "2,3,4,5,6,7,8,31",
                         "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,154,256,355,455,556,662,3005",
+                        "startOffsets": "55,154,256,355,455,556,662,3415",
                         "endColumns": "98,101,98,99,100,105,116,100",
-                        "endOffsets": "149,251,350,450,551,657,774,3101"
+                        "endOffsets": "149,251,350,450,551,657,774,3511"
                     }
                 },
                 {

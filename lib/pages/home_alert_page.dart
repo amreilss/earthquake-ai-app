@@ -1,3 +1,4 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -5,15 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
-import '../widgets/custom_navbar.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
-
-void printFCMToken() async {
-  String? token = await FirebaseMessaging.instance.getToken();
-  print('📱 FCM Token: $token');
-}
-
 
 class AlertNotification {
   final String date;
@@ -40,23 +32,31 @@ class AlertNotification {
 
   factory AlertNotification.fromJson(Map<String, dynamic> json) {
     final location = json['location'] ?? {};
-    final lat = location['_latitude'] ?? 0.0;
-    final lng = location['_longitude'] ?? 0.0;
+    final lat = location['_latitude'] ?? location['lat'] ?? 0.0;
+    final lng = location['_longitude'] ?? location['lng'] ?? 0.0;
 
-    final timestamp = json['createDate']?['_seconds'] ?? 0;
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    DateTime date;
+    if (json.containsKey('createDate') &&
+        json['createDate'] is Map &&
+        json['createDate']['_seconds'] != null) {
+      final timestamp = json['createDate']['_seconds'];
+      date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    } else {
+      date = DateTime.now(); // ถ้าไม่มี timestamp มา
+    }
+
     final magnitude = json['magnitude'].toString();
 
     return AlertNotification(
       date: date.toString(),
-      area: '', // Placeholder, will update with placemark
+      area: '',
       magnitude: magnitude,
       dept: json['depth'].toString(),
       reaction: json['reaction'] ?? '',
       destruction: getDestructionFromMagnitude(magnitude),
       intensity: getIntensityFromMagnitude(magnitude),
-      lat: lat.toDouble(),
-      lng: lng.toDouble(),
+      lat: double.tryParse(lat.toString()) ?? 0.0,
+      lng: double.tryParse(lng.toString()) ?? 0.0,
     );
   }
 }
@@ -67,7 +67,7 @@ String getDestructionFromMagnitude(String magStr) {
   if (mag < 5.0) return "Minor ขนาดเล็ก";
   if (mag < 6.0) return "Moderate ขนาดปานกลาง";
   if (mag < 7.0) return "Major ขนาดใหญ่";
-  return "Severe ขนาดรุนแรง! ";
+  return "Severe ขนาดรุนแรง!";
 }
 
 String getIntensityFromMagnitude(String magStr) {
@@ -76,7 +76,7 @@ String getIntensityFromMagnitude(String magStr) {
   if (mag < 5.0) return "Light ผลกระทบเล็กน้อย";
   if (mag < 6.0) return "Moderate ผลกระทบปานกลาง";
   if (mag < 7.0) return "Strong ผลกระทบมาก";
-  return "Violent ผลกระทบรุนแรง! ";
+  return "Violent ผลกระทบรุนแรง!";
 }
 
 class HomeAlertPage extends StatefulWidget {
@@ -94,6 +94,8 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
   late WebSocketChannel channel;
   List<AlertNotification> alertHistory = [];
 
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
   @override
   void initState() {
     super.initState();
@@ -108,56 +110,78 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
       try {
         final data = jsonDecode(message);
         final alert = AlertNotification.fromJson(data);
+        print('📥 แปลง JSON แล้ว: ${alert.magnitude}, ${alert.lat}, ${alert.lng}');
 
-        if (currentPosition != null) {
+        String areaName = 'Unknown';
+        try {
           final placemark = await placemarkFromCoordinates(alert.lat, alert.lng);
-          String areaName = 'Unknown';
           if (placemark.isNotEmpty) {
             areaName = '${placemark[0].subLocality}, ${placemark[0].locality}, ${placemark[0].country}';
           }
+        } catch (e) {
+          print('⚠️ placemark error: $e');
+        }
 
-          final enrichedAlert = AlertNotification(
-            date: alert.date,
-            area: areaName,
-            magnitude: alert.magnitude,
-            dept: alert.dept,
-            reaction: alert.reaction,
-            destruction: alert.destruction,
-            intensity: alert.intensity,
-            lat: alert.lat,
-            lng: alert.lng,
+        final enrichedAlert = AlertNotification(
+          date: alert.date,
+          area: areaName,
+          magnitude: alert.magnitude,
+          dept: alert.dept,
+          reaction: alert.reaction,
+          destruction: alert.destruction,
+          intensity: alert.intensity,
+          lat: alert.lat,
+          lng: alert.lng,
+        );
+
+        setState(() {
+          alertHistory.insert(0, enrichedAlert);
+          print('📍 Added to history: ${enrichedAlert.magnitude}');
+        });
+
+        if (currentPosition != null && isWithinAlertRadius(enrichedAlert, currentPosition!)) {
+          // 🔔 Popup
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text("🌐 Earthquake Alert"),
+              content: Text(
+                "Magnitude ${enrichedAlert.magnitude}\nLocation: ${enrichedAlert.area}\nReaction: ${enrichedAlert.reaction}",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK"),
+                )
+              ],
+            ),
           );
 
-          setState(() {
-            alertHistory.insert(0, enrichedAlert);
-          });
-
-          if (isWithinAlertRadius(enrichedAlert, currentPosition!)) {
-            if (!mounted) return;
-            showDialog(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: const Text("🌐 Earthquake Alert"),
-                content: Text(
-                  "Magnitude ${enrichedAlert.magnitude}\nLocation: ${enrichedAlert.area}\nReaction: ${enrichedAlert.reaction}",
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("OK"),
-                  )
-                ],
+          // 🔔 Local Notification
+          flutterLocalNotificationsPlugin.show(
+            enrichedAlert.hashCode,
+            '🌍 Earthquake Alert',
+            'Magnitude ${enrichedAlert.magnitude} at ${enrichedAlert.area}',
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'high_importance_channel',
+                'High Importance Notifications',
+                channelDescription: 'Used for important notifications',
+                importance: Importance.max,
+                priority: Priority.high,
+                icon: '@mipmap/ic_launcher',
               ),
-            );
-          } else {
-            print('📍 แผ่นดินไหวอยู่นอกระยะที่ควรแจ้งเตือน');
-          }
+            ),
+          );
+        } else {
+          print('📍 แผ่นดินไหวอยู่นอกระยะที่ควรแจ้งเตือน');
         }
       } catch (e) {
-        print('❗ แปลงข้อมูล JSON ผิดพลาด: $e');
+        print('❗ JSON ผิดพลาด: $e');
       }
     });
   }
+
 
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -208,7 +232,7 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
       userPos,
     );
     final double allowedRadius = getAlertRadius(alert.magnitude);
-    print('🔍 ระยะทางจาก epicenter: ${dist.toStringAsFixed(2)} m, อนุญาต: $allowedRadius m');
+    print('🔍 ห่างจาก epicenter: ${dist.toStringAsFixed(2)} m, ขีดจำกัด: $allowedRadius m');
     return dist <= allowedRadius;
   }
 
@@ -221,7 +245,6 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
       children: alertHistory.map((data) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.grey[200],
@@ -365,5 +388,3 @@ class _HomeAlertPageState extends State<HomeAlertPage> {
     );
   }
 }
-
-

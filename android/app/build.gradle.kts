@@ -1,8 +1,6 @@
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
@@ -10,13 +8,12 @@ plugins {
 android {
     namespace = "com.example.test_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973" // ✅ ตั้งให้ตรงกับที่ geolocator และ geocoding ต้องการ
-
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true // ✅ เพิ่มบรรทัดนี้
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -24,21 +21,34 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.test_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.example.test_app" // 👈 เปลี่ยนได้ถ้าต้องการ unique
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../earthquake-key.jks") // ✅ ต้องเป็น ../ เพราะไฟล์อยู่นอกโฟลเดอร์ app
+            storePassword = "123456"
+            keyAlias = "earthquake"
+            keyPassword = "123456"
+        }
+    }
+
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release") // ✅ ใช้ key ที่สร้างเอง
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        getByName("debug") {
+            // debug config เดิม
         }
     }
 }
@@ -48,5 +58,7 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // ✅ เพิ่มตรงนี้
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
+
+apply(plugin = "com.google.gms.google-services")

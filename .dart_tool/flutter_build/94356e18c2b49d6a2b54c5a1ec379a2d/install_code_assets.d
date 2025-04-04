@@ -1,0 +1,1 @@
+ C:\\earthquake-ai-app\\.dart_tool\\flutter_build\\94356e18c2b49d6a2b54c5a1ec379a2d\\native_assets.json: 

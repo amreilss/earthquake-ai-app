@@ -8,7 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 3000; // ✅ ใช้ environment variable
 
 // 🔐 Init Firebase Admin
-const serviceAccount = require('./serviceAccountKey.json');
+const serviceAccount = require('C:/earthquake-ai-app/backend/earthquake-ai-acc08-firebase-adminsdk-fbsvc-84ad7b52a6.json');
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
